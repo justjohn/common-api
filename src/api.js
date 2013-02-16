@@ -11,6 +11,9 @@ var API = function(params) {
 	this.format   = params.format || 'json';
 	this.method   = params.method || 'GET';
 	this.base     = params.base || '/';
+
+        this.urlTransform = params.urlTransform;
+        this.resultTransform = params.resultTransform;
 };
 
 API.FORMAT = {
@@ -56,10 +59,15 @@ API.prototype.call = function(path, params, format) {
 
 	format = format || this.format;
 
+        var url = this.base + path + query;
+        if (this.urlTransform !== undefined) {
+            url = this.urlTransform(url)
+        }
+
 	var options = {
 	  host: this.hostname,
 	  port: this.port,
-	  path: this.base + path + query,
+	  path: url,
 	  method: this.method
 	};
 
