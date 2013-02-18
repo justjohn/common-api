@@ -2,7 +2,7 @@
   "author": "John Roepke <john@justjohn.us> (http://john.sh/)",
   "name": "common-api",
   "description": "Low level API abstraction.",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "homepage": "https://github.com/justjohn/common-api",
   "licenses": [
     { "type": "BSD-2-Clause",
