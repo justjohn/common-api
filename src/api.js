@@ -11,12 +11,15 @@ var API = function(params) {
 	this.format   = params.format || 'json';
 	this.method   = params.method || 'GET';
 	this.base     = params.base || '/';
+	this.cache    = params.cache || false;
+    this.root     = params.root || ['body'];
 
-        this.urlTransform = params.urlTransform;
-        this.resultTransform = params.resultTransform;
+	this.urlTransform = params.urlTransform;
+	this.resultTransform = params.resultTransform;
 };
 
 API.FORMAT = {
+	RAW: 'raw',
 	XML: 'xml',
 	JSON: 'json',
 	CSV: 'csv',
@@ -71,9 +74,11 @@ API.prototype.call = function(path, params, format) {
 	  method: this.method
 	};
 
+	var that = this;
+
 	var req = http.request(options, function(res) {
 		if (format == API.FORMAT.XML) {
-			var parser = new xml2object(['body'], res);
+			var parser = new xml2object(that.root, res);
 			var data = {};
 
 			parser.on('object', function(name, obj) {
