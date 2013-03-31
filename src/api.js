@@ -15,6 +15,7 @@ var API = function(params) {
 	this.base     = params.base || '/';
 	this.cache    = params.cache || false;
     this.root     = params.root || ['body'];
+    this.debug    = params.debug || false;
 
 	this.urlTransform = params.urlTransform;
 	this.resultTransform = params.resultTransform;
@@ -53,10 +54,11 @@ API.prototype.call = function(path, params, format) {
 	if (params) for (var key in params) if (params.hasOwnProperty(key)) {
 		value = params[key];
 		if (is("Array", value)) {
-			for (var i=0;i<value.length;i++)
-				paramStr.push(key + "=" + value[i]);
+			for (var i=0;i<value.length;i++) {
+				paramStr.push(key + "=" + encodeURIComponent(value[i]));
+			}
 		} else {
-			paramStr.push(key + "=" + value);
+			paramStr.push(key + "=" + encodeURIComponent(value));
 		}
 	}
 
@@ -75,6 +77,10 @@ API.prototype.call = function(path, params, format) {
 	  path: url,
 	  method: this.method
 	};
+
+	if (this.debug) {
+		console.log(options);
+	}
 
 	var that = this,
 		mode = http;
