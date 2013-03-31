@@ -1,5 +1,6 @@
 var	xml2object = require('xml2object'),
 	http = require('http'),
+	https = require('https'),
 	csv = require('csv'),
 	Q = require('q');
 
@@ -7,7 +8,8 @@ var API = function(params) {
 	params = params || {};
 
 	this.hostname = params.hostname;
-	this.port     = params.port || 80;
+	this.secure   = params.secure || false;
+	this.port     = params.port || (this.secure?443:80);
 	this.format   = params.format || 'json';
 	this.method   = params.method || 'GET';
 	this.base     = params.base || '/';
@@ -62,10 +64,10 @@ API.prototype.call = function(path, params, format) {
 
 	format = format || this.format;
 
-        var url = this.base + path + query;
-        if (this.urlTransform !== undefined) {
-            url = this.urlTransform(url)
-        }
+	var url = this.base + path + query;
+	if (this.urlTransform !== undefined) {
+		url = this.urlTransform(url)
+	}
 
 	var options = {
 	  host: this.hostname,
@@ -74,9 +76,13 @@ API.prototype.call = function(path, params, format) {
 	  method: this.method
 	};
 
-	var that = this;
+	var that = this,
+		mode = http;
 
-	var req = http.request(options, function(res) {
+	if (this.secure)
+		mode = https;
+
+	var req = mode.request(options, function(res) {
 		if (format == API.FORMAT.XML) {
 			var parser = new xml2object(that.root, res);
 			var data = {};
