@@ -35,115 +35,126 @@ function is(type, obj) {
 }
 
 API.prototype.call = function(path, params, format) {
-	var deferred = Q.defer();
+	var d = require('domain').create(),
+		deferred = Q.defer(),
+		that = this;
 
-	if (typeof path !== "string") {
-		format = params;
-		params = path;
-		path = "";
-	}
+	d.on('error', function(err) {
+		console.log("Unable to process response from API " + err.message)
 
-	if (typeof params === "string") {
-		format = params;
-		params = undefined;
-	}
+		deferred.reject("Error when processing response" + err.message);
+	});
 
-	var paramStr = [],
-		value;
-
-	if (params) for (var key in params) if (params.hasOwnProperty(key)) {
-		value = params[key];
-		if (is("Array", value)) {
-			for (var i=0;i<value.length;i++) {
-				paramStr.push(key + "=" + encodeURIComponent(value[i]));
-			}
-		} else {
-			paramStr.push(key + "=" + encodeURIComponent(value));
+	d.run(function() {
+		if (typeof path !== "string") {
+			format = params;
+			params = path;
+			path = "";
 		}
-	}
 
-	var query = (paramStr.length>0?"?":"") + paramStr.join("&");
+		if (typeof params === "string") {
+			format = params;
+			params = undefined;
+		}
 
-	format = format || this.format;
+		var paramStr = [],
+			value;
 
-	var url = this.base + path + query;
-	if (this.urlTransform !== undefined) {
-		url = this.urlTransform(url)
-	}
-
-	var options = {
-	  host: this.hostname,
-	  port: this.port,
-	  path: url,
-	  method: this.method
-	};
-
-	if (this.debug) {
-		console.log(options);
-	}
-
-	var that = this,
-		mode = http;
-
-	if (this.secure)
-		mode = https;
-
-	var req = mode.request(options, function(res) {
-		if (format == API.FORMAT.XML) {
-			var parser = new xml2object(that.root, res);
-			var data = {};
-
-			parser.on('object', function(name, obj) {
-				data[name] = obj;
-			});
-
-			parser.on('end', function() {
-				deferred.resolve(data);
-			});
-
-			parser.start();
-
-		} else if (format == API.FORMAT.CSV || format == API.FORMAT.CSV_HEADER) {
-			var header,
-				records = [];
-
-			csv()
-				.from.stream(res)
-				.on('record', function(record) {
-					if (format == API.FORMAT.CSV_HEADER && header === undefined)
-						header = record;
-					else
-						records.push(record);
-				})
-				.on('end', function() {
-					if (header)
-						records = processCSV(header, records);
-					deferred.resolve(records);
-				})
-
-		} else {
-			var output = '';
-			res.setEncoding('utf8');
-			res.on('data', function (chunk) {
-				output += chunk;
-			});
-
-			res.on('end', function () {
-				if (format == API.FORMAT.JSON) {
-					var json = JSON.parse(output);
-					deferred.resolve(json);
-				} else {
-					deferred.resolve(output);
+		if (params) for (var key in params) if (params.hasOwnProperty(key)) {
+			value = params[key];
+			if (is("Array", value)) {
+				for (var i=0;i<value.length;i++) {
+					paramStr.push(key + "=" + encodeURIComponent(value[i]));
 				}
-			});
+			} else {
+				paramStr.push(key + "=" + encodeURIComponent(value));
+			}
 		}
-	});
 
-	req.on('error', function(e) {
-	  	deferred.reject('problem with request: ' + e.message);
-	});
+		var query = (paramStr.length>0?"?":"") + paramStr.join("&");
 
-	req.end();
+		format = format || that.format;
+
+		var url = that.base + path + query;
+		if (that.urlTransform !== undefined) {
+			url = that.urlTransform(url)
+		}
+
+		var options = {
+		  host: that.hostname,
+		  port: that.port,
+		  path: url,
+		  method: that.method
+		};
+
+		if (that.debug) {
+			console.log(options);
+		}
+
+		var mode = http;
+
+		if (that.secure)
+			mode = https;
+
+		var req = mode.request(options, function(res) {
+			if (format == API.FORMAT.XML) {
+				var parser = new xml2object(that.root, res);
+				var data = {};
+
+				parser.on('object', function(name, obj) {
+					data[name] = obj;
+				});
+
+				parser.on('end', function() {
+					deferred.resolve(data);
+				});
+
+				parser.start();
+
+			} else if (format == API.FORMAT.CSV || format == API.FORMAT.CSV_HEADER) {
+				var header,
+					records = [];
+
+				csv()
+					.from.stream(res)
+					.on('record', function(record) {
+						if (format == API.FORMAT.CSV_HEADER && header === undefined)
+							header = record;
+						else
+							records.push(record);
+					})
+					.on('end', function() {
+						if (header)
+							records = processCSV(header, records);
+						deferred.resolve(records);
+					})
+
+			} else {
+				var output = '';
+				res.setEncoding('utf8');
+				res.on('data', function (chunk) {
+					output += chunk;
+				});
+
+				res.on('end', function () {
+					if (format == API.FORMAT.JSON) {
+						console.log(output);
+						var json = JSON.parse(output);
+						deferred.resolve(json);
+					} else {
+						deferred.resolve(output);
+					}
+				});
+			}
+		});
+
+		req.on('error', function(e) {
+		  	deferred.reject('problem with request: ' + e.message);
+		});
+
+		req.end();
+
+	});
 
 	return deferred.promise;
 };
