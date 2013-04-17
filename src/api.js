@@ -138,7 +138,6 @@ API.prototype.call = function(path, params, format) {
 
 				res.on('end', function () {
 					if (format == API.FORMAT.JSON) {
-						console.log(output);
 						var json = JSON.parse(output);
 						deferred.resolve(json);
 					} else {
