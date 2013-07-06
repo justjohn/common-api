@@ -1,4 +1,4 @@
-var	xml2object = require('xml2object'),
+var    xml2object = require('xml2object'),
 	http = require('http'),
 	https = require('https'),
 	csv = require('csv'),
@@ -136,6 +136,16 @@ API.prototype.call = function(path, params, format) {
 		  path: url,
 		  method: that.method
 		};
+        
+        if (format === API.FORMAT.JSON) {
+            options.headers = {
+                "Accept": "application/json"
+            }
+        } else if (format === API.FORMAT.XML) {
+            options.headers = {
+                "Accept": "application/xml"
+            }
+        }
 
 		if (that.debug) {
 			console.log(options);
