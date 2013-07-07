@@ -139,11 +139,11 @@ API.prototype.call = function(path, params, format) {
         
         if (format === API.FORMAT.JSON) {
             options.headers = {
-                "Accept": "application/json"
+                "Accept": "application/json,*/*;q=0.8"
             }
         } else if (format === API.FORMAT.XML) {
             options.headers = {
-                "Accept": "application/xml"
+                "Accept": "application/xml,*/*;q=0.8"
             }
         }
 
